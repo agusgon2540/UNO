@@ -127,26 +127,67 @@
   </div>
 
   <script>
-    let botHand = [{ color: "blue", value: "5" }]; // Simulamos que el bot tiene una carta
+    // Función para generar una carta aleatoria
+    function generarCarta() {
+      const colores = ['red', 'green', 'blue', 'yellow'];
+      const valores = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reverse', 'draw2'];
+      const color = colores[Math.floor(Math.random() * colores.length)];
+      const valor = valores[Math.floor(Math.random() * valores.length)];
+      return { color, value: valor };
+    }
 
+    // Función para repartir cartas
+    function repartirCartas() {
+      const cartasJugador = [];
+      const cartasBot = [];
+      
+      // Repartir 7 cartas a cada uno
+      for (let i = 0; i < 7; i++) {
+        cartasJugador.push(generarCarta());
+        cartasBot.push(generarCarta());
+      }
+      
+      return { cartasJugador, cartasBot };
+    }
+
+    // Inicializamos el juego
+    let { cartasJugador, cartasBot } = repartirCartas();
+
+    // Actualiza la interfaz con las cartas del BOT
     function updateBotHandDisplay() {
       const botCountElem = document.getElementById('bot-count');
-      botCountElem.textContent = botHand.length + " cartas";
+      botCountElem.textContent = cartasBot.length + " cartas";
       
       // Alerta cuando el bot tiene solo una carta
-      if (botHand.length === 1) {
+      if (cartasBot.length === 1) {
         alert("¡Atención! El bot tiene solo una carta.");
       }
     }
 
-    // Llamamos directamente a la función para actualizar la visualización
-    updateBotHandDisplay();
+    // Mostrar las cartas del jugador (para mostrar la lógica puedes agregar aquí cartas para el jugador también)
+    function updatePlayerHandDisplay() {
+      const playerHandElem = document.getElementById('player-hand');
+      playerHandElem.innerHTML = ''; // Limpiar el contenido actual
 
-    // Simulación para probar la alerta (elimina esta línea en el código real)
+      // Agregar las cartas del jugador a la interfaz
+      cartasJugador.forEach(carta => {
+        const cartaDiv = document.createElement('div');
+        cartaDiv.className = `card ${carta.color}`;
+        cartaDiv.textContent = carta.value;
+        playerHandElem.appendChild(cartaDiv);
+      });
+    }
+
+    // Llamamos para actualizar la visualización
+    updateBotHandDisplay();
+    updatePlayerHandDisplay();
+    
+    // Simulación de que el bot tiene una carta menos (esto es para prueba, puedes manejar la lógica de turno real)
     setTimeout(() => {
-      botHand = [{ color: "blue", value: "5" }];
-      updateBotHandDisplay();  // Vuelve a actualizar la mano del bot
+      cartasBot.pop(); // Elimina una carta para probar la alerta
+      updateBotHandDisplay();
     }, 3000);
+
   </script>
 </body>
 </html>
