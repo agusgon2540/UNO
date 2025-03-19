@@ -25,7 +25,6 @@
       background-color: rgba(52, 73, 94, 0.9);
       border-radius: 15px;
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-      display: none; /* No mostrar el juego hasta que se inicie */
     }
     /* Secciones del juego */
     #board-top {
@@ -46,14 +45,13 @@
       align-items: center;
       justify-content: center;
       margin: 5px;
-      font-size: 20px;
+      font-size: 15px;
       font-weight: bold;
       color: #fff;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
       user-select: none;
-      text-align: center;
     }
     .card:hover {
       transform: translateY(-5px);
@@ -64,7 +62,7 @@
     .green  { background-color: #27ae60; }
     .blue   { background-color: #3498db; }
     .yellow { background-color: #f1c40f; color: #2c3e50; }
-    .wild   { background-color: #8e44ad; font-size: 16px; padding: 20px; } /* Reducir tamaño de texto y ajustar el padding */
+    .wild   { background-color: #8e44ad; }
     
     /* Sección de la mano del jugador */
     #player-hand {
@@ -106,11 +104,6 @@
 </head>
 <body>
   <h1>UNO Online con Bot y Cartas Especiales</h1>
-  
-  <!-- Botón para comenzar el juego -->
-  <button id="start-button" style="padding: 15px; font-size: 20px; cursor: pointer; background-color: #e67e22; color: white; border: none; border-radius: 8px;">Empezar Juego</button>
-  
-  <!-- Tablero del juego que se muestra después de empezar -->
   <div id="game-board">
     <div id="board-top">
       <div id="deck">
@@ -128,74 +121,309 @@
     </div>
     <div id="player-hand">
       <h2>Tu mano</h2>
+      <!-- Se mostrarán las cartas del jugador -->
     </div>
     <button id="pass-turn">Pasar turno (robar carta)</button>
   </div>
 
   <script>
-    // Función para generar una carta aleatoria
-    function generarCarta() {
-      const colores = ['red', 'green', 'blue', 'yellow'];
-      const valores = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reverse', 'draw2'];
-      const color = colores[Math.floor(Math.random() * colores.length)];
-      const valor = valores[Math.floor(Math.random() * valores.length)];
-      return { color, value: valor };
-    }
+    // Definición de colores y valores (simplificado)
+    const colors = ['red', 'green', 'blue', 'yellow'];
+    const values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reversa', '+2'];
 
-    // Función para repartir cartas
-    function repartirCartas() {
-      const cartasJugador = [];
-      const cartasBot = [];
-      
-      // Repartir 7 cartas a cada uno
-      for (let i = 0; i < 7; i++) {
-        cartasJugador.push(generarCarta());
-        cartasBot.push(generarCarta());
+    let deck = [];
+    let gameOver = false; // Para detener el juego una vez ganado
+    let playerUnoCalled = false; // Indica si ya se gritó UNO cuando el jugador tiene 1 carta
+
+    // Crear el mazo de cartas
+    function createDeck() {
+      deck = [];
+      colors.forEach(color => {
+        // Una carta "0" por color
+        deck.push({ color: color, value: '0' });
+        // Dos copias para cada uno de los demás valores
+        values.slice(1).forEach(value => {
+          deck.push({ color: color, value: value });
+          deck.push({ color: color, value: value });
+        });
+      });
+      // Agregar cartas especiales: "cambiar de color" (antes wild) y draw4
+      for (let i = 0; i < 4; i++) {
+        deck.push({ color: 'wild', value: 'cambiar de color' });
+        deck.push({ color: 'wild', value: '+4' });
       }
-      
-      return { cartasJugador, cartasBot };
     }
 
-    // Función para iniciar el juego
-    function iniciarJuego() {
-      const { cartasJugador, cartasBot } = repartirCartas();
-      
-      // Mostrar el tablero del juego
-      document.getElementById('game-board').style.display = 'block';
-      
-      // Actualizar la interfaz con las cartas del BOT
-      function updateBotHandDisplay() {
-        const botCountElem = document.getElementById('bot-count');
-        botCountElem.textContent = cartasBot.length + " cartas";
-        
-        // Alerta cuando el bot tiene solo una carta
-        if (cartasBot.length === 1) {
-          alert("¡Atención! El bot tiene solo una carta.");
+    // Barajar el mazo (algoritmo Fisher-Yates)
+    function shuffleDeck() {
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+    }
+
+    let playerHand = [];
+    let botHand = [];
+    let currentCard = null;
+    let currentTurn = "player"; // "player" o "bot"
+
+    // Reparte las manos iniciales (7 cartas cada uno)
+    function dealInitialHands() {
+      playerHand = deck.splice(0, 7);
+      botHand = deck.splice(0, 7);
+      renderPlayerHand();
+      updateBotHandDisplay();
+    }
+
+    // Actualiza la visualización de la mano del jugador
+    function renderPlayerHand() {
+      const handDiv = document.getElementById('player-hand');
+      handDiv.innerHTML = '<h2>Tu mano</h2>';
+      playerHand.forEach((card, index) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('card', card.color);
+        cardDiv.textContent = card.value.toUpperCase();
+        // Al hacer clic, si es tu turno, se intenta jugar la carta
+        cardDiv.addEventListener('click', () => {
+          if (gameOver) return;
+          if (currentTurn !== "player") {
+            alert("Espera tu turno.");
+            return;
+          }
+          playerPlayCard(index);
+        });
+        handDiv.appendChild(cardDiv);
+      });
+      // Si te queda una sola carta y no has gritado UNO, mostrar el botón
+      if (playerHand.length === 1 && !playerUnoCalled) {
+        const unoBtn = document.createElement('button');
+        unoBtn.id = "uno-button";
+        unoBtn.textContent = "GRITAR UNO";
+        unoBtn.addEventListener('click', callUno);
+        handDiv.appendChild(unoBtn);
+      }
+    }
+
+    // Actualiza la visualización de la mano del bot (muestra solo la cantidad de cartas)
+    function updateBotHandDisplay() {
+      const botCountElem = document.getElementById('bot-count');
+      botCountElem.textContent = botHand.length + " cartas";
+    }
+
+    // Muestra la carta actual en el montón de descartes
+    function renderDiscardPile() {
+      const discardDiv = document.getElementById('discard');
+      discardDiv.innerHTML = '<h2>Descartes</h2>';
+      const cardDiv = document.createElement('div');
+      cardDiv.classList.add('card');
+      if (currentCard) {
+        cardDiv.classList.add(currentCard.color);
+        cardDiv.textContent = currentCard.value.toUpperCase();
+      } else {
+        cardDiv.textContent = 'Vacío';
+      }
+      discardDiv.appendChild(cardDiv);
+    }
+
+    // Función para verificar si alguien ganó
+    function checkWinCondition() {
+      if (playerHand.length === 0) {
+        alert("¡Felicidades, ganaste!");
+        gameOver = true;
+      } else if (botHand.length === 0) {
+        alert("El bot ganó.");
+        gameOver = true;
+      }
+    }
+
+    // Función que procesa acciones especiales y define a quién le toca el turno.
+    function processSpecialCard(card, playedBy) {
+      // Para SKIP y REVERSE: quien la juega conserva el turno.
+      if(card.value === "skip" || card.value === "reversa") {
+        currentTurn = playedBy;
+      }
+      // Para DRAW2: el oponente roba 2 y quien la juega conserva el turno.
+      else if (card.value === "+2") {
+        if (playedBy === "player") {
+          drawCardsForBot(2);
+          currentTurn = "player";
+        } else {
+          drawCardsForPlayer(2);
+          currentTurn = "bot";
         }
       }
-
-      // Mostrar las cartas del jugador
-      function updatePlayerHandDisplay() {
-        const playerHandElem = document.getElementById('player-hand');
-        playerHandElem.innerHTML = ''; // Limpiar el contenido actual
-
-        // Agregar las cartas del jugador a la interfaz
-        cartasJugador.forEach(carta => {
-          const cartaDiv = document.createElement('div');
-          cartaDiv.className = `card ${carta.color}`;
-          cartaDiv.textContent = carta.value;
-          playerHandElem.appendChild(cartaDiv);
-        });
+      // Para DRAW4: se cambia el color y el oponente roba 4.
+      else if (card.value === "+4") {
+        if (playedBy === "player") {
+          let newColor;
+          do {
+            newColor = prompt("Elige un color para +4 (red, green, blue, yellow):");
+            if (newColor) newColor = newColor.toLowerCase();
+          } while (!newColor || !colors.includes(newColor));
+          card.color = newColor;
+          drawCardsForBot(4);
+          currentTurn = "player";
+        } else {
+          let newColor = colors[Math.floor(Math.random()*colors.length)];
+          card.color = newColor;
+          alert("El bot eligió el color " + newColor.toUpperCase() + " para +4.");
+          drawCardsForPlayer(4);
+          currentTurn = "bot";
+        }
       }
-
-      // Llamamos para actualizar la visualización
-      updateBotHandDisplay();
-      updatePlayerHandDisplay();
+      // Para "cambiar de color" (antes wild): se cambia el color.
+      else if (card.value === "cambiar de color") {
+        if (playedBy === "player") {
+          let newColor;
+          do {
+            newColor = prompt("Elige un color para cambiar de color (red, green, blue, yellow):");
+            if (newColor) newColor = newColor.toLowerCase();
+          } while (!newColor || !colors.includes(newColor));
+          card.color = newColor;
+        } else {
+          let newColor = colors[Math.floor(Math.random()*colors.length)];
+          card.color = newColor;
+          alert("El bot eligió el color " + newColor.toUpperCase() + " para cambiar de color.");
+        }
+        // Luego de "cambiar de color", el turno pasa normalmente al oponente.
+        currentTurn = (playedBy === "player" ? "bot" : "player");
+      }
+      // Carta normal: el turno pasa al oponente.
+      else {
+        currentTurn = (playedBy === "player" ? "bot" : "player");
+      }
     }
 
-    // Asignar el evento al botón "Empezar Juego"
-    document.getElementById('start-button').addEventListener('click', iniciarJuego);
-    
+    // Función para cuando el jugador juega una carta
+    function playerPlayCard(cardIndex) {
+      const card = playerHand[cardIndex];
+      // Valida la jugada (coincidencia en color, valor o si es una carta especial de color wild)
+      if (!currentCard || card.color === currentCard.color || card.value === currentCard.value || card.color === 'wild') {
+        currentCard = card;
+        playerHand.splice(cardIndex, 1);
+        // Al jugar, se reinicia la opción de GRITAR UNO
+        playerUnoCalled = false;
+        renderPlayerHand();
+        renderDiscardPile();
+        // Procesa acciones especiales según la carta jugada
+        processSpecialCard(card, "player");
+        checkWinCondition();
+        // Si tras procesar la carta el turno pasa al bot, se activa su turno con retardo
+        if(currentTurn === "bot" && !gameOver) {
+          setTimeout(botTurn, 1000);
+        }
+      } else {
+        alert('Movimiento no válido');
+      }
+    }
+
+    // Función para que el jugador pase el turno y robe una carta
+    function passTurn() {
+      if (currentTurn !== "player") {
+        alert("No es tu turno.");
+        return;
+      }
+      if (deck.length === 0) {
+        alert('El mazo está vacío');
+        return;
+      }
+      const newCard = deck.shift();
+      playerHand.push(newCard);
+      // Al pasar, se reinicia la opción de GRITAR UNO
+      playerUnoCalled = false;
+      renderPlayerHand();
+      // Al pasar, el turno va al bot
+      currentTurn = "bot";
+      setTimeout(botTurn, 1000);
+    }
+
+    // Función para llamar UNO
+    function callUno() {
+      playerUnoCalled = true;
+      alert("¡UNO!");
+      // Se elimina el botón GRITAR UNO y se vuelve a renderizar la mano
+      renderPlayerHand();
+    }
+
+    // Funciones para robar varias cartas
+    function drawCardsForBot(count) {
+      for (let i = 0; i < count; i++) {
+        if (deck.length === 0) {
+          alert("El mazo está vacío");
+          break;
+        }
+        botHand.push(deck.shift());
+      }
+      updateBotHandDisplay();
+    }
+
+    function drawCardsForPlayer(count) {
+      for (let i = 0; i < count; i++) {
+        if (deck.length === 0) {
+          alert("El mazo está vacío");
+          break;
+        }
+        playerHand.push(deck.shift());
+      }
+      // Al robar, se reinicia la opción de GRITAR UNO
+      playerUnoCalled = false;
+      renderPlayerHand();
+    }
+
+    // Función del turno del bot
+    function botTurn() {
+      if (gameOver) return;
+      // El bot busca una carta válida:
+      let validIndex = -1;
+      for (let i = 0; i < botHand.length; i++) {
+        const card = botHand[i];
+        if (!currentCard || card.color === currentCard.color || card.value === currentCard.value || card.color === 'wild') {
+          validIndex = i;
+          break;
+        }
+      }
+      if (validIndex !== -1) {
+        // El bot juega la carta válida encontrada
+        const botCard = botHand.splice(validIndex, 1)[0];
+        currentCard = botCard;
+        renderDiscardPile();
+        updateBotHandDisplay();
+        processSpecialCard(botCard, "bot");
+        checkWinCondition();
+        // Si tras procesar la carta el turno sigue con el bot (por ejemplo, skip o reverse),
+        // el bot juega nuevamente.
+        if (currentTurn === "bot" && !gameOver) {
+          setTimeout(botTurn, 1000);
+        }
+      } else {
+        // Si no tiene carta válida, el bot roba UNA carta
+        if (deck.length === 0) {
+          alert("El mazo está vacío");
+          currentTurn = "player";
+          return;
+        }
+        botHand.push(deck.shift());
+        updateBotHandDisplay();
+        currentTurn = "player";
+      }
+    }
+
+    // Asignar la función al botón "Pasar turno"
+    document.getElementById('pass-turn').addEventListener('click', passTurn);
+
+    // Función de inicialización del juego
+    function initGame() {
+      createDeck();
+      shuffleDeck();
+      dealInitialHands();
+      // Selecciona la primera carta válida para iniciar el montón de descartes (evitando comodines)
+      do {
+        currentCard = deck.shift();
+      } while (currentCard.color === 'wild');
+      renderDiscardPile();
+    }
+
+    initGame();
   </script>
 </body>
 </html>
