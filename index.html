@@ -25,6 +25,7 @@
       background-color: rgba(52, 73, 94, 0.9);
       border-radius: 15px;
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      display: none; /* No mostrar el juego hasta que se inicie */
     }
     /* Secciones del juego */
     #board-top {
@@ -105,6 +106,11 @@
 </head>
 <body>
   <h1>UNO Online con Bot y Cartas Especiales</h1>
+  
+  <!-- Botón para comenzar el juego -->
+  <button id="start-button" style="padding: 15px; font-size: 20px; cursor: pointer; background-color: #e67e22; color: white; border: none; border-radius: 8px;">Empezar Juego</button>
+  
+  <!-- Tablero del juego que se muestra después de empezar -->
   <div id="game-board">
     <div id="board-top">
       <div id="deck">
@@ -150,44 +156,46 @@
       return { cartasJugador, cartasBot };
     }
 
-    // Inicializamos el juego
-    let { cartasJugador, cartasBot } = repartirCartas();
-
-    // Actualiza la interfaz con las cartas del BOT
-    function updateBotHandDisplay() {
-      const botCountElem = document.getElementById('bot-count');
-      botCountElem.textContent = cartasBot.length + " cartas";
+    // Función para iniciar el juego
+    function iniciarJuego() {
+      const { cartasJugador, cartasBot } = repartirCartas();
       
-      // Alerta cuando el bot tiene solo una carta
-      if (cartasBot.length === 1) {
-        alert("¡Atención! El bot tiene solo una carta.");
+      // Mostrar el tablero del juego
+      document.getElementById('game-board').style.display = 'block';
+      
+      // Actualizar la interfaz con las cartas del BOT
+      function updateBotHandDisplay() {
+        const botCountElem = document.getElementById('bot-count');
+        botCountElem.textContent = cartasBot.length + " cartas";
+        
+        // Alerta cuando el bot tiene solo una carta
+        if (cartasBot.length === 1) {
+          alert("¡Atención! El bot tiene solo una carta.");
+        }
       }
-    }
 
-    // Mostrar las cartas del jugador (para mostrar la lógica puedes agregar aquí cartas para el jugador también)
-    function updatePlayerHandDisplay() {
-      const playerHandElem = document.getElementById('player-hand');
-      playerHandElem.innerHTML = ''; // Limpiar el contenido actual
+      // Mostrar las cartas del jugador
+      function updatePlayerHandDisplay() {
+        const playerHandElem = document.getElementById('player-hand');
+        playerHandElem.innerHTML = ''; // Limpiar el contenido actual
 
-      // Agregar las cartas del jugador a la interfaz
-      cartasJugador.forEach(carta => {
-        const cartaDiv = document.createElement('div');
-        cartaDiv.className = `card ${carta.color}`;
-        cartaDiv.textContent = carta.value;
-        playerHandElem.appendChild(cartaDiv);
-      });
-    }
+        // Agregar las cartas del jugador a la interfaz
+        cartasJugador.forEach(carta => {
+          const cartaDiv = document.createElement('div');
+          cartaDiv.className = `card ${carta.color}`;
+          cartaDiv.textContent = carta.value;
+          playerHandElem.appendChild(cartaDiv);
+        });
+      }
 
-    // Llamamos para actualizar la visualización
-    updateBotHandDisplay();
-    updatePlayerHandDisplay();
-    
-    // Simulación de que el bot tiene una carta menos (esto es para prueba, puedes manejar la lógica de turno real)
-    setTimeout(() => {
-      cartasBot.pop(); // Elimina una carta para probar la alerta
+      // Llamamos para actualizar la visualización
       updateBotHandDisplay();
-    }, 3000);
+      updatePlayerHandDisplay();
+    }
 
+    // Asignar el evento al botón "Empezar Juego"
+    document.getElementById('start-button').addEventListener('click', iniciarJuego);
+    
   </script>
 </body>
 </html>
