@@ -138,17 +138,15 @@
         alert("¡Atención! El bot tiene solo una carta.");
       }
     }
-    
+
     // Llamamos directamente a la función para actualizar la visualización
     updateBotHandDisplay();
-    
 
     // Simulación para probar la alerta (elimina esta línea en el código real)
     setTimeout(() => {
       botHand = [{ color: "blue", value: "5" }];
-      updateBotHandDisplay();
+      updateBotHandDisplay();  // Vuelve a actualizar la mano del bot
     }, 3000);
-
   </script>
 </body>
 </html>
