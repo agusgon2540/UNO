@@ -17,6 +17,21 @@
     h1, h2 {
       margin: 10px 0;
     }
+    /* Notificación */
+    #notification {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #27ae60;
+      padding: 10px 20px;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
     /* Contenedor principal */
     #game-board {
       max-width: 900px;
@@ -104,6 +119,7 @@
 </head>
 <body>
   <h1>UNO Online con Bot y Cartas Especiales</h1>
+  <div id="notification"></div>
   <div id="game-board">
     <div id="board-top">
       <div id="deck">
@@ -132,29 +148,36 @@
     const values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reversa', '+2'];
 
     let deck = [];
-    let gameOver = false; // Para detener el juego una vez ganado
-    let playerUnoCalled = false; // Indica si ya se gritó UNO cuando el jugador tiene 1 carta
+    let gameOver = false;
+    let playerUnoCalled = false;
+
+    // Función para mostrar notificaciones
+    function showNotification(message) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 2000);
+    }
 
     // Crear el mazo de cartas
     function createDeck() {
       deck = [];
       colors.forEach(color => {
-        // Una carta "0" por color
         deck.push({ color: color, value: '0' });
-        // Dos copias para cada uno de los demás valores
         values.slice(1).forEach(value => {
           deck.push({ color: color, value: value });
           deck.push({ color: color, value: value });
         });
       });
-      // Agregar cartas especiales: "cambiar de color" (antes wild) y draw4
       for (let i = 0; i < 4; i++) {
         deck.push({ color: 'wild', value: 'cambiar de color' });
         deck.push({ color: 'wild', value: '+4' });
       }
     }
 
-    // Barajar el mazo (algoritmo Fisher-Yates)
+    // Barajar el mazo
     function shuffleDeck() {
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -165,9 +188,9 @@
     let playerHand = [];
     let botHand = [];
     let currentCard = null;
-    let currentTurn = "player"; // "player" o "bot"
+    let currentTurn = "player";
 
-    // Reparte las manos iniciales (7 cartas cada uno)
+    // Reparte las manos iniciales
     function dealInitialHands() {
       playerHand = deck.splice(0, 7);
       botHand = deck.splice(0, 7);
@@ -183,7 +206,6 @@
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card', card.color);
         cardDiv.textContent = card.value.toUpperCase();
-        // Al hacer clic, si es tu turno, se intenta jugar la carta
         cardDiv.addEventListener('click', () => {
           if (gameOver) return;
           if (currentTurn !== "player") {
@@ -194,7 +216,6 @@
         });
         handDiv.appendChild(cardDiv);
       });
-      // Si te queda una sola carta y no has gritado UNO, mostrar el botón
       if (playerHand.length === 1 && !playerUnoCalled) {
         const unoBtn = document.createElement('button');
         unoBtn.id = "uno-button";
@@ -204,7 +225,7 @@
       }
     }
 
-    // Actualiza la visualización de la mano del bot (muestra solo la cantidad de cartas)
+    // Actualiza la visualización de la mano del bot
     function updateBotHandDisplay() {
       const botCountElem = document.getElementById('bot-count');
       botCountElem.textContent = botHand.length + " cartas";
@@ -225,7 +246,7 @@
       discardDiv.appendChild(cardDiv);
     }
 
-    // Función para verificar si alguien ganó
+    // Verifica condición de victoria
     function checkWinCondition() {
       if (playerHand.length === 0) {
         alert("¡Felicidades, ganaste!");
@@ -236,13 +257,11 @@
       }
     }
 
-    // Función que procesa acciones especiales y define a quién le toca el turno.
+    // Procesa acciones especiales
     function processSpecialCard(card, playedBy) {
-      // Para SKIP y REVERSE: quien la juega conserva el turno.
       if(card.value === "skip" || card.value === "reversa") {
         currentTurn = playedBy;
       }
-      // Para DRAW2: el oponente roba 2 y quien la juega conserva el turno.
       else if (card.value === "+2") {
         if (playedBy === "player") {
           drawCardsForBot(2);
@@ -252,7 +271,6 @@
           currentTurn = "bot";
         }
       }
-      // Para DRAW4: se cambia el color y el oponente roba 4.
       else if (card.value === "+4") {
         if (playedBy === "player") {
           let newColor;
@@ -271,7 +289,6 @@
           currentTurn = "bot";
         }
       }
-      // Para "cambiar de color" (antes wild): se cambia el color.
       else if (card.value === "cambiar de color") {
         if (playedBy === "player") {
           let newColor;
@@ -285,39 +302,35 @@
           card.color = newColor;
           alert("El bot eligió el color " + newColor.toUpperCase() + " para cambiar de color.");
         }
-        // Luego de "cambiar de color", el turno pasa normalmente al oponente.
         currentTurn = (playedBy === "player" ? "bot" : "player");
       }
-      // Carta normal: el turno pasa al oponente.
       else {
         currentTurn = (playedBy === "player" ? "bot" : "player");
       }
     }
 
-    // Función para cuando el jugador juega una carta
+    // Jugador juega carta
     function playerPlayCard(cardIndex) {
       const card = playerHand[cardIndex];
-      // Valida la jugada (coincidencia en color, valor o si es una carta especial de color wild)
       if (!currentCard || card.color === currentCard.color || card.value === currentCard.value || card.color === 'wild') {
         currentCard = card;
         playerHand.splice(cardIndex, 1);
-        // Al jugar, se reinicia la opción de GRITAR UNO
         playerUnoCalled = false;
         renderPlayerHand();
         renderDiscardPile();
-        // Procesa acciones especiales según la carta jugada
         processSpecialCard(card, "player");
         checkWinCondition();
-        // Si tras procesar la carta el turno pasa al bot, se activa su turno con retardo
         if(currentTurn === "bot" && !gameOver) {
           setTimeout(botTurn, 1000);
+        } else if (currentTurn === "player" && !gameOver) {
+          showNotification("¡Sigue tu turno!");
         }
       } else {
         alert('Movimiento no válido');
       }
     }
 
-    // Función para que el jugador pase el turno y robe una carta
+    // Pasar turno
     function passTurn() {
       if (currentTurn !== "player") {
         alert("No es tu turno.");
@@ -329,29 +342,23 @@
       }
       const newCard = deck.shift();
       playerHand.push(newCard);
-      // Al pasar, se reinicia la opción de GRITAR UNO
       playerUnoCalled = false;
       renderPlayerHand();
-      // Al pasar, el turno va al bot
       currentTurn = "bot";
       setTimeout(botTurn, 1000);
     }
 
-    // Función para llamar UNO
+    // Gritar UNO
     function callUno() {
       playerUnoCalled = true;
       alert("¡UNO!");
-      // Se elimina el botón GRITAR UNO y se vuelve a renderizar la mano
       renderPlayerHand();
     }
 
-    // Funciones para robar varias cartas
+    // Robar cartas
     function drawCardsForBot(count) {
       for (let i = 0; i < count; i++) {
-        if (deck.length === 0) {
-          alert("El mazo está vacío");
-          break;
-        }
+        if (deck.length === 0) break;
         botHand.push(deck.shift());
       }
       updateBotHandDisplay();
@@ -359,21 +366,17 @@
 
     function drawCardsForPlayer(count) {
       for (let i = 0; i < count; i++) {
-        if (deck.length === 0) {
-          alert("El mazo está vacío");
-          break;
-        }
+        if (deck.length === 0) break;
         playerHand.push(deck.shift());
       }
-      // Al robar, se reinicia la opción de GRITAR UNO
       playerUnoCalled = false;
       renderPlayerHand();
     }
 
-    // Función del turno del bot
+    // Turno del bot
     function botTurn() {
       if (gameOver) return;
-      // El bot busca una carta válida:
+      
       let validIndex = -1;
       for (let i = 0; i < botHand.length; i++) {
         const card = botHand[i];
@@ -382,21 +385,21 @@
           break;
         }
       }
+
       if (validIndex !== -1) {
-        // El bot juega la carta válida encontrada
         const botCard = botHand.splice(validIndex, 1)[0];
         currentCard = botCard;
         renderDiscardPile();
         updateBotHandDisplay();
         processSpecialCard(botCard, "bot");
         checkWinCondition();
-        // Si tras procesar la carta el turno sigue con el bot (por ejemplo, skip o reverse),
-        // el bot juega nuevamente.
+        
         if (currentTurn === "bot" && !gameOver) {
           setTimeout(botTurn, 1000);
+        } else if (currentTurn === "player" && !gameOver) {
+          showNotification("¡Es tu turno!");
         }
       } else {
-        // Si no tiene carta válida, el bot roba UNA carta
         if (deck.length === 0) {
           alert("El mazo está vacío");
           currentTurn = "player";
@@ -405,18 +408,17 @@
         botHand.push(deck.shift());
         updateBotHandDisplay();
         currentTurn = "player";
+        if (!gameOver) showNotification("¡Es tu turno!");
       }
     }
 
-    // Asignar la función al botón "Pasar turno"
+    // Inicialización del juego
     document.getElementById('pass-turn').addEventListener('click', passTurn);
 
-    // Función de inicialización del juego
     function initGame() {
       createDeck();
       shuffleDeck();
       dealInitialHands();
-      // Selecciona la primera carta válida para iniciar el montón de descartes (evitando comodines)
       do {
         currentCard = deck.shift();
       } while (currentCard.color === 'wild');
