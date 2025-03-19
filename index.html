@@ -127,7 +127,7 @@
   </div>
 
   <script>
-    let botHand = [];
+    let botHand = [{ color: "blue", value: "5" }]; // Simulamos que el bot tiene una carta
 
     function updateBotHandDisplay() {
       const botCountElem = document.getElementById('bot-count');
@@ -138,6 +138,10 @@
         alert("¡Atención! El bot tiene solo una carta.");
       }
     }
+    
+    // Llamamos directamente a la función para actualizar la visualización
+    updateBotHandDisplay();
+    
 
     // Simulación para probar la alerta (elimina esta línea en el código real)
     setTimeout(() => {
