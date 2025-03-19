@@ -2,10 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>UNO Online con Bot y Cartas Especiales</title>
+  <title>UNO Online con Notificaciones</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* Fuente y fondo global */
     body {
       margin: 0;
       padding: 0;
@@ -14,10 +13,8 @@
       color: #ecf0f1;
       text-align: center;
     }
-    h1, h2 {
-      margin: 10px 0;
-    }
-    /* Notificación */
+    h1, h2 { margin: 10px 0; }
+
     #notification {
       display: none;
       position: fixed;
@@ -25,14 +22,23 @@
       left: 50%;
       transform: translateX(-50%);
       background: #27ae60;
-      padding: 10px 20px;
-      border-radius: 5px;
+      padding: 15px 30px;
+      border-radius: 25px;
       color: white;
       font-weight: bold;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       z-index: 1000;
+      font-size: 1.2em;
+      animation: fadeInOut 2.5s ease-in-out;
     }
-    /* Contenedor principal */
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    }
+
     #game-board {
       max-width: 900px;
       margin: 40px auto;
@@ -41,17 +47,14 @@
       border-radius: 15px;
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     }
-    /* Secciones del juego */
+
     #board-top {
       display: flex;
       justify-content: space-around;
       align-items: center;
       flex-wrap: wrap;
     }
-    #deck, #discard, #bot-hand {
-      margin: 10px;
-    }
-    /* Estilos para las cartas */
+
     .card {
       width: 80px;
       height: 120px;
@@ -68,22 +71,20 @@
       cursor: pointer;
       user-select: none;
     }
+
     .card:hover {
       transform: translateY(-5px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
     }
-    /* Colores para las cartas */
-    .red    { background-color: #e74c3c; }
-    .green  { background-color: #27ae60; }
-    .blue   { background-color: #3498db; }
+
+    .red { background-color: #e74c3c; }
+    .green { background-color: #27ae60; }
+    .blue { background-color: #3498db; }
     .yellow { background-color: #f1c40f; color: #2c3e50; }
-    .wild   { background-color: #8e44ad; }
-    
-    /* Sección de la mano del jugador */
-    #player-hand {
-      margin-top: 20px;
-    }
-    /* Botón de pasar turno */
+    .wild { background-color: #8e44ad; }
+
+    #player-hand { margin-top: 20px; }
+
     #pass-turn {
       margin-top: 20px;
       padding: 10px 20px;
@@ -96,10 +97,9 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    #pass-turn:hover {
-      background-color: #1abc9c;
-    }
-    /* Botón para GRITAR UNO */
+
+    #pass-turn:hover { background-color: #1abc9c; }
+
     #uno-button {
       margin-top: 10px;
       padding: 8px 16px;
@@ -112,56 +112,40 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    #uno-button:hover {
-      background-color: #d35400;
-    }
+
+    #uno-button:hover { background-color: #d35400; }
   </style>
 </head>
 <body>
-  <h1>UNO Online con Bot y Cartas Especiales</h1>
+  <h1>UNO Online con Bot y Notificaciones</h1>
   <div id="notification"></div>
+  
   <div id="game-board">
     <div id="board-top">
-      <div id="deck">
-        <h2>Mazo</h2>
-        <div class="card">Mazo</div>
-      </div>
-      <div id="discard">
-        <h2>Descartes</h2>
-        <div class="card">Vacío</div>
-      </div>
-      <div id="bot-hand">
-        <h2>Mano Bot</h2>
-        <p id="bot-count">0 cartas</p>
-      </div>
+      <div id="deck"><h2>Mazo</h2><div class="card">Mazo</div></div>
+      <div id="discard"><h2>Descartes</h2><div class="card">Vacío</div></div>
+      <div id="bot-hand"><h2>Mano Bot</h2><p id="bot-count">0 cartas</p></div>
     </div>
-    <div id="player-hand">
-      <h2>Tu mano</h2>
-      <!-- Se mostrarán las cartas del jugador -->
-    </div>
+    <div id="player-hand"><h2>Tu mano</h2></div>
     <button id="pass-turn">Pasar turno (robar carta)</button>
   </div>
 
   <script>
-    // Definición de colores y valores (simplificado)
     const colors = ['red', 'green', 'blue', 'yellow'];
     const values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reversa', '+2'];
+    let deck = [], gameOver = false, playerUnoCalled = false;
+    let playerHand = [], botHand = [], currentCard = null, currentTurn = "player";
 
-    let deck = [];
-    let gameOver = false;
-    let playerUnoCalled = false;
-
-    // Función para mostrar notificaciones
     function showNotification(message) {
       const notification = document.getElementById('notification');
       notification.textContent = message;
       notification.style.display = 'block';
-      setTimeout(() => {
-        notification.style.display = 'none';
-      }, 2000);
+      notification.style.animation = 'none';
+      void notification.offsetWidth;
+      notification.style.animation = null;
+      setTimeout(() => notification.style.display = 'none', 2500);
     }
 
-    // Crear el mazo de cartas
     function createDeck() {
       deck = [];
       colors.forEach(color => {
@@ -177,7 +161,6 @@
       }
     }
 
-    // Barajar el mazo
     function shuffleDeck() {
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -185,12 +168,6 @@
       }
     }
 
-    let playerHand = [];
-    let botHand = [];
-    let currentCard = null;
-    let currentTurn = "player";
-
-    // Reparte las manos iniciales
     function dealInitialHands() {
       playerHand = deck.splice(0, 7);
       botHand = deck.splice(0, 7);
@@ -198,7 +175,6 @@
       updateBotHandDisplay();
     }
 
-    // Actualiza la visualización de la mano del jugador
     function renderPlayerHand() {
       const handDiv = document.getElementById('player-hand');
       handDiv.innerHTML = '<h2>Tu mano</h2>';
@@ -206,185 +182,134 @@
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card', card.color);
         cardDiv.textContent = card.value.toUpperCase();
-        cardDiv.addEventListener('click', () => {
-          if (gameOver) return;
-          if (currentTurn !== "player") {
-            alert("Espera tu turno.");
-            return;
-          }
+        cardDiv.onclick = () => {
+          if (gameOver || currentTurn !== "player") return;
           playerPlayCard(index);
-        });
+        };
         handDiv.appendChild(cardDiv);
       });
       if (playerHand.length === 1 && !playerUnoCalled) {
         const unoBtn = document.createElement('button');
         unoBtn.id = "uno-button";
         unoBtn.textContent = "GRITAR UNO";
-        unoBtn.addEventListener('click', callUno);
+        unoBtn.onclick = callUno;
         handDiv.appendChild(unoBtn);
       }
     }
 
-    // Actualiza la visualización de la mano del bot
     function updateBotHandDisplay() {
-      const botCountElem = document.getElementById('bot-count');
-      botCountElem.textContent = botHand.length + " cartas";
+      document.getElementById('bot-count').textContent = `${botHand.length} cartas`;
     }
 
-    // Muestra la carta actual en el montón de descartes
     function renderDiscardPile() {
       const discardDiv = document.getElementById('discard');
       discardDiv.innerHTML = '<h2>Descartes</h2>';
       const cardDiv = document.createElement('div');
-      cardDiv.classList.add('card');
-      if (currentCard) {
-        cardDiv.classList.add(currentCard.color);
-        cardDiv.textContent = currentCard.value.toUpperCase();
-      } else {
-        cardDiv.textContent = 'Vacío';
-      }
+      cardDiv.classList.add('card', currentCard?.color || '');
+      cardDiv.textContent = currentCard ? currentCard.value.toUpperCase() : 'Vacío';
       discardDiv.appendChild(cardDiv);
     }
 
-    // Verifica condición de victoria
     function checkWinCondition() {
-      if (playerHand.length === 0) {
-        alert("¡Felicidades, ganaste!");
+      if (playerHand.length === 0 || botHand.length === 0) {
         gameOver = true;
-      } else if (botHand.length === 0) {
-        alert("El bot ganó.");
-        gameOver = true;
+        alert(playerHand.length === 0 ? "¡Ganaste!" : "¡El bot ganó!");
       }
     }
 
-    // Procesa acciones especiales
     function processSpecialCard(card, playedBy) {
-      if(card.value === "skip" || card.value === "reversa") {
-        currentTurn = playedBy;
-      }
-      else if (card.value === "+2") {
-        if (playedBy === "player") {
-          drawCardsForBot(2);
-          currentTurn = "player";
-        } else {
-          drawCardsForPlayer(2);
-          currentTurn = "bot";
-        }
-      }
-      else if (card.value === "+4") {
-        if (playedBy === "player") {
-          let newColor;
-          do {
-            newColor = prompt("Elige un color para +4 (red, green, blue, yellow):");
-            if (newColor) newColor = newColor.toLowerCase();
-          } while (!newColor || !colors.includes(newColor));
-          card.color = newColor;
-          drawCardsForBot(4);
-          currentTurn = "player";
-        } else {
-          let newColor = colors[Math.floor(Math.random()*colors.length)];
-          card.color = newColor;
-          alert("El bot eligió el color " + newColor.toUpperCase() + " para +4.");
-          drawCardsForPlayer(4);
-          currentTurn = "bot";
-        }
-      }
-      else if (card.value === "cambiar de color") {
-        if (playedBy === "player") {
-          let newColor;
-          do {
-            newColor = prompt("Elige un color para cambiar de color (red, green, blue, yellow):");
-            if (newColor) newColor = newColor.toLowerCase();
-          } while (!newColor || !colors.includes(newColor));
-          card.color = newColor;
-        } else {
-          let newColor = colors[Math.floor(Math.random()*colors.length)];
-          card.color = newColor;
-          alert("El bot eligió el color " + newColor.toUpperCase() + " para cambiar de color.");
-        }
-        currentTurn = (playedBy === "player" ? "bot" : "player");
-      }
-      else {
-        currentTurn = (playedBy === "player" ? "bot" : "player");
+      const isPlayer = playedBy === "player";
+      switch(card.value) {
+        case 'skip':
+        case 'reversa':
+          currentTurn = playedBy;
+          break;
+        case '+2':
+          isPlayer ? drawCardsForBot(2) : drawCardsForPlayer(2);
+          currentTurn = playedBy;
+          break;
+        case '+4':
+          if (isPlayer) {
+            let newColor;
+            do { newColor = prompt("Elige color (red, green, blue, yellow):")?.toLowerCase(); }
+            while (!colors.includes(newColor));
+            card.color = newColor;
+            drawCardsForBot(4);
+          } else {
+            card.color = colors[Math.floor(Math.random()*4)];
+            alert(`El bot eligió ${card.color.toUpperCase()} para +4`);
+            drawCardsForPlayer(4);
+          }
+          currentTurn = playedBy;
+          break;
+        case 'cambiar de color':
+          if (isPlayer) {
+            let newColor;
+            do { newColor = prompt("Elige color (red, green, blue, yellow):")?.toLowerCase(); }
+            while (!colors.includes(newColor));
+            card.color = newColor;
+          } else {
+            card.color = colors[Math.floor(Math.random()*4)];
+            alert(`El bot eligió ${card.color.toUpperCase()}`);
+          }
+          currentTurn = isPlayer ? "bot" : "player";
+          break;
+        default:
+          currentTurn = isPlayer ? "bot" : "player";
       }
     }
 
-    // Jugador juega carta
-    function playerPlayCard(cardIndex) {
-      const card = playerHand[cardIndex];
-      if (!currentCard || card.color === currentCard.color || card.value === currentCard.value || card.color === 'wild') {
-        currentCard = card;
-        playerHand.splice(cardIndex, 1);
-        playerUnoCalled = false;
-        renderPlayerHand();
-        renderDiscardPile();
-        processSpecialCard(card, "player");
-        checkWinCondition();
-        if(currentTurn === "bot" && !gameOver) {
-          setTimeout(botTurn, 1000);
-        } else if (currentTurn === "player" && !gameOver) {
-          showNotification("¡Sigue tu turno!");
-        }
-      } else {
-        alert('Movimiento no válido');
-      }
+    function playerPlayCard(index) {
+      const card = playerHand[index];
+      if (currentCard?.color && card.color !== currentCard.color && 
+          card.value !== currentCard.value && card.color !== 'wild') return alert('Movimiento inválido');
+
+      currentCard = playerHand.splice(index, 1)[0];
+      playerUnoCalled = false;
+      renderPlayerHand();
+      renderDiscardPile();
+      processSpecialCard(currentCard, "player");
+      checkWinCondition();
+      
+      if (currentTurn === "bot" && !gameOver) setTimeout(botTurn, 1000);
+      else if (!gameOver) showNotification("¡Sigue tu turno!");
     }
 
-    // Pasar turno
     function passTurn() {
-      if (currentTurn !== "player") {
-        alert("No es tu turno.");
-        return;
-      }
-      if (deck.length === 0) {
-        alert('El mazo está vacío');
-        return;
-      }
-      const newCard = deck.shift();
-      playerHand.push(newCard);
+      if (currentTurn !== "player" || gameOver) return;
+      if (deck.length === 0) return alert('Mazo vacío');
+      
+      playerHand.push(deck.shift());
       playerUnoCalled = false;
       renderPlayerHand();
       currentTurn = "bot";
       setTimeout(botTurn, 1000);
     }
 
-    // Gritar UNO
     function callUno() {
       playerUnoCalled = true;
       alert("¡UNO!");
       renderPlayerHand();
     }
 
-    // Robar cartas
     function drawCardsForBot(count) {
-      for (let i = 0; i < count; i++) {
-        if (deck.length === 0) break;
-        botHand.push(deck.shift());
-      }
+      for (let i = 0; i < count && deck.length > 0; i++) botHand.push(deck.shift());
       updateBotHandDisplay();
     }
 
     function drawCardsForPlayer(count) {
-      for (let i = 0; i < count; i++) {
-        if (deck.length === 0) break;
-        playerHand.push(deck.shift());
-      }
+      for (let i = 0; i < count && deck.length > 0; i++) playerHand.push(deck.shift());
       playerUnoCalled = false;
       renderPlayerHand();
     }
 
-    // Turno del bot
     function botTurn() {
       if (gameOver) return;
       
-      let validIndex = -1;
-      for (let i = 0; i < botHand.length; i++) {
-        const card = botHand[i];
-        if (!currentCard || card.color === currentCard.color || card.value === currentCard.value || card.color === 'wild') {
-          validIndex = i;
-          break;
-        }
-      }
+      const validIndex = botHand.findIndex(c => 
+        !currentCard || c.color === currentCard.color || 
+        c.value === currentCard.value || c.color === 'wild'
+      );
 
       if (validIndex !== -1) {
         const botCard = botHand.splice(validIndex, 1)[0];
@@ -394,17 +319,10 @@
         processSpecialCard(botCard, "bot");
         checkWinCondition();
         
-        if (currentTurn === "bot" && !gameOver) {
-          setTimeout(botTurn, 1000);
-        } else if (currentTurn === "player" && !gameOver) {
-          showNotification("¡Es tu turno!");
-        }
+        if (currentTurn === "bot") setTimeout(botTurn, 1000);
+        else if (!gameOver) showNotification("¡Es tu turno!");
       } else {
-        if (deck.length === 0) {
-          alert("El mazo está vacío");
-          currentTurn = "player";
-          return;
-        }
+        if (deck.length === 0) return alert("Mazo vacío");
         botHand.push(deck.shift());
         updateBotHandDisplay();
         currentTurn = "player";
@@ -412,16 +330,13 @@
       }
     }
 
-    // Inicialización del juego
     document.getElementById('pass-turn').addEventListener('click', passTurn);
 
     function initGame() {
       createDeck();
       shuffleDeck();
       dealInitialHands();
-      do {
-        currentCard = deck.shift();
-      } while (currentCard.color === 'wild');
+      do { currentCard = deck.shift(); } while (currentCard.color === 'wild');
       renderDiscardPile();
     }
 
