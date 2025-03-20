@@ -5,7 +5,6 @@
     <title>UNO Elemental - Guerra de Magos</title>
     <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
     <style>
-        /* Fondo y estética general */
         body {
             margin: 0;
             padding: 20px;
@@ -14,8 +13,7 @@
             color: #fefefe;
             text-align: center;
         }
-        
-        /* Tablero principal con efecto de pergamino */
+
         #game-board {
             max-width: 900px;
             margin: 20px auto;
@@ -25,15 +23,14 @@
             border-radius: 10px;
             box-shadow: 0 0 10px #000;
         }
-        
-        /* Contenedores de áreas (mazo, descartes, mano rival) */
+
         #board-top {
             display: flex;
             justify-content: space-around;
             align-items: flex-start;
             margin-bottom: 20px;
         }
-        
+
         #deck, #discard, #bot-hand {
             background: rgba(0, 0, 0, 0.5);
             padding: 10px;
@@ -41,17 +38,15 @@
             border-radius: 8px;
             width: 28%;
         }
-        
+
         #deck h3, #discard h3, #bot-hand h3 {
             margin: 0 0 10px;
         }
-        
-        /* Área de descartes visible */
+
         #discard .card {
             margin: 0 auto;
         }
-        
-        /* Área de mano del jugador */
+
         #player-hand {
             background: rgba(0, 0, 0, 0.5);
             padding: 15px;
@@ -59,8 +54,7 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        
-        /* Botón de pasar turno */
+
         button {
             background: #4a3520;
             border: 2px solid #c0a050;
@@ -70,9 +64,14 @@
             cursor: pointer;
             margin: 10px;
             border-radius: 5px;
+            transition: transform 0.2s;
         }
-        
-        /* Modal de historia */
+
+        button:hover {
+            transform: scale(1.05);
+            background: #5a4530;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -87,8 +86,7 @@
             z-index: 1000;
             max-width: 80%;
         }
-        
-        /* Estilos de cartas: se muestran valor y elemento */
+
         .card {
             width: 80px;
             height: 120px;
@@ -100,36 +98,39 @@
             justify-content: center;
             font-weight: bold;
             cursor: pointer;
-            background-size: cover;
             position: relative;
             overflow: hidden;
             padding: 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        
-        /* Estilo según elemento */
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
         .fuego { background-color: #e25822; border: 2px solid #ff4500; }
         .naturaleza { background-color: #228B22; border: 2px solid #32CD32; }
         .agua { background-color: #1E90FF; border: 2px solid #00BFFF; }
         .rayo { background-color: #d3b628; border: 2px solid #FFA500; }
         .wild { background-color: #8e44ad; border: 2px solid #DA70D6; }
-        
-        /* Texto en cada carta para mostrar el nombre del elemento */
+
         .card small {
             font-size: 0.7em;
             margin-top: 5px;
             display: block;
+            color: rgba(255,255,255,0.9);
         }
     </style>
 </head>
 <body>
-    <!-- Modal de Historia -->
     <div id="story-modal" class="modal" style="display: block;">
         <h2>¡Bienvenido, Archimago!</h2>
-        <p>En el reino de Elementia, fuerzas místicas y antiguas te convocan. Tu destino es enfrentarte al Mago Oscuro y recuperar los cristales elementales. Cada carta es un hechizo, y cada jugada, parte de tu leyenda.</p>
+        <p>En el reino de Elementia, fuerzas místicas te convocan. Enfrenta al Mago Oscuro y recupera los cristales elementales usando tus hechizos.</p>
         <button onclick="startGame()">Comenzar Duelo</button>
     </div>
 
-    <!-- Tablero de Juego -->
     <div id="game-board" style="display: none;">
         <div id="board-top">
             <div id="deck">
@@ -160,7 +161,6 @@
         let currentCard = null;
         let currentTurn = 'player';
 
-        // Diccionario para mostrar el nombre del elemento
         const elementos = {
             fuego: 'Fuego',
             naturaleza: 'Naturaleza',
@@ -173,7 +173,6 @@
             const colors = ['fuego', 'naturaleza', 'agua', 'rayo'];
             const values = ['0','1','2','3','4','5','6','7','8','9','reverse','skip','+2'];
             
-            // Cartas normales: se agrega una sola carta "0" y se duplican las demás
             colors.forEach(color => {
                 deck.push({ color, value: '0' });
                 values.slice(1).forEach(value => {
@@ -182,7 +181,6 @@
                 });
             });
             
-            // Cartas especiales (wild)
             for(let i = 0; i < 4; i++){
                 deck.push({ color: 'wild', value: '+4' });
                 deck.push({ color: 'wild', value: 'cambiar' });
@@ -203,7 +201,6 @@
             updateCounts();
         }
 
-        // Renderiza la mano del jugador mostrando valor y el nombre del elemento
         function renderHands() {
             const playerHandDiv = document.getElementById('player-hand');
             playerHandDiv.innerHTML = '<h3>Tu Mano</h3>';
@@ -216,7 +213,6 @@
                 playerHandDiv.appendChild(cardElement);
             });
             
-            // Actualiza la carta en el área de descartes
             if(currentCard) {
                 const currentCardDiv = document.getElementById('current-card');
                 currentCardDiv.className = `card ${currentCard.color}`;
@@ -226,63 +222,38 @@
 
         function isValidPlay(card) {
             if(!currentCard) return true;
-            // Permite jugar si el color, valor coinciden o si es wild
             return card.color === currentCard.color ||
                    card.value === currentCard.value ||
                    card.color === 'wild';
         }
 
-        // Procesa las cartas especiales y ajusta el turno
         function processSpecialCard(card, playedBy) {
-            if(card.value === 'reverse'){
-                // Reverse: en 2 jugadores, se pasa el turno al oponente
-                currentTurn = (playedBy === 'player') ? 'bot' : 'player';
-            } else if(card.value === 'skip'){
-                // Skip: salta el turno del oponente; se asigna turno al que jugó la carta
+            if(card.value === 'reverse') {
+                currentTurn = playedBy; // En 2 jugadores actúa como skip
+            } else if(card.value === 'skip') {
                 currentTurn = playedBy;
-            } else if(card.value === '+2'){
-                // +2: el oponente roba 2 cartas
-                if(playedBy === 'player'){
-                    for(let i = 0; i < 2; i++) {
-                        botHand.push(deck.shift());
-                    }
-                } else {
-                    for(let i = 0; i < 2; i++) {
-                        playerHand.push(deck.shift());
-                    }
+            } else if(card.value === '+2') {
+                const target = playedBy === 'player' ? botHand : playerHand;
+                for(let i = 0; i < 2; i++) {
+                    if(deck.length > 0) target.push(deck.shift());
                 }
-                currentTurn = (playedBy === 'player') ? 'bot' : 'player';
-            } else if(card.value === '+4'){
-                // +4: solicita cambio de color y el oponente roba 4 cartas
-                let newColor = '';
-                if(playedBy === 'player'){
-                    newColor = prompt("Elige nuevo color (fuego, naturaleza, agua, rayo):");
-                } else {
-                    const colors = ['fuego', 'naturaleza', 'agua', 'rayo'];
-                    newColor = colors[Math.floor(Math.random() * colors.length)];
-                }
+                currentTurn = playedBy;
+            } else if(card.value === '+4') {
+                const newColor = playedBy === 'player' 
+                    ? prompt("Elige color (fuego, naturaleza, agua, rayo):")
+                    : ['fuego', 'naturaleza', 'agua', 'rayo'][Math.floor(Math.random()*4)];
                 card.color = newColor;
-                if(playedBy === 'player'){
-                    for(let i = 0; i < 4; i++){
-                        botHand.push(deck.shift());
-                    }
-                } else {
-                    for(let i = 0; i < 4; i++){
-                        playerHand.push(deck.shift());
-                    }
+                const target = playedBy === 'player' ? botHand : playerHand;
+                for(let i = 0; i < 4; i++) {
+                    if(deck.length > 0) target.push(deck.shift());
                 }
-                currentTurn = (playedBy === 'player') ? 'bot' : 'player';
-            } else if(card.value === 'cambiar'){
-                // "Cambiar": permite elegir un nuevo color sin penalización
-                let newColor = '';
-                if(playedBy === 'player'){
-                    newColor = prompt("Elige nuevo color (fuego, naturaleza, agua, rayo):");
-                } else {
-                    const colors = ['fuego', 'naturaleza', 'agua', 'rayo'];
-                    newColor = colors[Math.floor(Math.random()*colors.length)];
-                }
+                currentTurn = playedBy;
+            } else if(card.value === 'cambiar') {
+                const newColor = playedBy === 'player' 
+                    ? prompt("Elige color (fuego, naturaleza, agua, rayo):")
+                    : ['fuego', 'naturaleza', 'agua', 'rayo'][Math.floor(Math.random()*4)];
                 card.color = newColor;
-                currentTurn = (playedBy === 'player') ? 'bot' : 'player';
+                currentTurn = playedBy;
             }
         }
 
@@ -292,10 +263,9 @@
             const card = playerHand[index];
             if(!isValidPlay(card)) return alert('Movimiento no válido!');
             
-            // Juega la carta y quítala de la mano
             currentCard = playerHand.splice(index, 1)[0];
             
-            if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)){
+            if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)) {
                 processSpecialCard(currentCard, 'player');
             } else {
                 currentTurn = 'bot';
@@ -303,32 +273,39 @@
             
             renderHands();
             updateCounts();
-            setTimeout(botPlay, 1000);
+            
+            if(currentTurn === 'bot') setTimeout(botPlay, 1000);
         }
 
         function botPlay() {
-            setTimeout(() => {
-                const playable = botHand.findIndex(c =>
-                    c.color === currentCard.color ||
-                    c.value === currentCard.value ||
-                    c.color === 'wild'
-                );
+            const playable = botHand.findIndex(c =>
+                c.color === currentCard.color ||
+                c.value === currentCard.value ||
+                c.color === 'wild'
+            );
+            
+            if(playable !== -1) {
+                currentCard = botHand.splice(playable, 1)[0];
                 
-                if(playable !== -1) {
-                    currentCard = botHand.splice(playable, 1)[0];
-                    if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)){
-                        processSpecialCard(currentCard, 'bot');
-                    } else {
-                        currentTurn = 'player';
-                    }
+                if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)) {
+                    processSpecialCard(currentCard, 'bot');
                 } else {
-                    botHand.push(deck.shift());
                     currentTurn = 'player';
                 }
-                
-                renderHands();
-                updateCounts();
-            }, 1000);
+            } else {
+                if(deck.length > 0) {
+                    botHand.push(deck.shift());
+                }
+                currentTurn = 'player';
+            }
+            
+            renderHands();
+            updateCounts();
+            
+            // Verificar si el bot debe seguir jugando
+            if(currentTurn === 'bot') {
+                setTimeout(botPlay, 1000);
+            }
         }
 
         function updateCounts() {
@@ -339,11 +316,11 @@
             document.getElementById('story-modal').style.display = 'none';
             document.getElementById('game-board').style.display = 'block';
             
+            deck = [];
             createDeck();
             shuffleDeck();
             dealCards();
             
-            // Selecciona la primera carta válida (que no sea wild)
             do {
                 currentCard = deck.shift();
             } while(currentCard.color === 'wild');
@@ -354,10 +331,12 @@
 
         function passTurn() {
             if(currentTurn !== 'player') return;
-            playerHand.push(deck.shift());
+            if(deck.length > 0) {
+                playerHand.push(deck.shift());
+            }
             currentTurn = 'bot';
             renderHands();
-            botPlay();
+            setTimeout(botPlay, 1000);
         }
     </script>
 </body>
