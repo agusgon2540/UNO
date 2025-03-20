@@ -2,17 +2,50 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>UNO Elemental - Guerra de Magos</title>
+    <title>Guerra de Elementia</title>
     <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #2d2d2d, #4a2c2c);
+            background: linear-gradient(135deg, #1a1a1a, #2d1a1a);
             font-family: 'MedievalSharp', cursive;
             color: #fefefe;
             text-align: center;
+            min-height: 100vh;
         }
+
+        .cristal-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #c0a050;
+            box-shadow: 0 0 15px rgba(192, 160, 80, 0.3);
+        }
+
+        .cristal {
+            width: 30px;
+            height: 50px;
+            margin: 5px;
+            display: inline-block;
+            opacity: 0.3;
+            transition: all 0.5s;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .cristal.activo {
+            opacity: 1;
+            filter: drop-shadow(0 0 10px currentColor);
+            transform: scale(1.1);
+        }
+
+        #cristal-fuego { background: linear-gradient(45deg, #ff6b00, #ff0000); }
+        #cristal-naturaleza { background: linear-gradient(45deg, #00ff00, #006400); }
+        #cristal-agua { background: linear-gradient(45deg, #00ffff, #0000ff); }
+        #cristal-rayo { background: linear-gradient(45deg, #ffd700, #ffa500); }
 
         #game-board {
             max-width: 900px;
@@ -21,7 +54,7 @@
             background: rgba(0, 0, 0, 0.8) url('https://www.publicdomainpictures.net/pictures/270000/velka/old-paper-texture-background-1568762482cdd.jpg') center/cover no-repeat;
             border: 4px solid #c0a050;
             border-radius: 10px;
-            box-shadow: 0 0 10px #000;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
 
         #board-top {
@@ -29,22 +62,21 @@
             justify-content: space-around;
             align-items: flex-start;
             margin-bottom: 20px;
+            gap: 15px;
         }
 
         #deck, #discard, #bot-hand {
             background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
+            padding: 15px;
             border: 2px solid #c0a050;
             border-radius: 8px;
             width: 28%;
+            min-height: 180px;
         }
 
-        #deck h3, #discard h3, #bot-hand h3 {
-            margin: 0 0 10px;
-        }
-
-        #discard .card {
-            margin: 0 auto;
+        #bot-hand {
+            background: linear-gradient(45deg, #2d1a1a, #4a2c2c);
+            border-color: #8b0000;
         }
 
         #player-hand {
@@ -78,13 +110,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px;
             border: 3px solid gold;
-            border-radius: 10px;
+            border-radius: 15px;
             color: white;
             z-index: 1000;
-            max-width: 80%;
+            max-width: 600px;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.5);
         }
 
         .card {
@@ -98,36 +131,22 @@
             justify-content: center;
             font-weight: bold;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            padding: 5px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .fuego { background-color: #e25822; border: 2px solid #ff4500; }
-        .naturaleza { background-color: #228B22; border: 2px solid #32CD32; }
-        .agua { background-color: #1E90FF; border: 2px solid #00BFFF; }
-        .rayo { background-color: #d3b628; border: 2px solid #FFA500; }
-        .wild { background-color: #8e44ad; border: 2px solid #DA70D6; }
+        .fuego { background: linear-gradient(145deg, #e25822, #ff4500); }
+        .naturaleza { background: linear-gradient(145deg, #228B22, #32CD32); }
+        .agua { background: linear-gradient(145deg, #1E90FF, #00BFFF); }
+        .rayo { background: linear-gradient(145deg, #d3b628, #FFA500); }
+        .wild { background: linear-gradient(145deg, #8e44ad, #DA70D6); }
 
         .card small {
             font-size: 0.7em;
             margin-top: 5px;
             display: block;
             color: rgba(255,255,255,0.9);
-        }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; top: 0; }
-            20% { opacity: 1; top: 20px; }
-            80% { opacity: 1; top: 20px; }
-            100% { opacity: 0; top: 40px; }
         }
 
         .victory-modal {
@@ -143,36 +162,57 @@
             text-align: center;
             z-index: 1000;
         }
+
+        .instrucciones {
+            text-align: left;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
+    <div class="cristal-container">
+        <div class="cristal" id="cristal-fuego"></div>
+        <div class="cristal" id="cristal-naturaleza"></div>
+        <div class="cristal" id="cristal-agua"></div>
+        <div class="cristal" id="cristal-rayo"></div>
+    </div>
+
     <div id="story-modal" class="modal" style="display: block;">
-        <h2>¡Bienvenido, Archimago!</h2>
-        <p>En el reino de Elementia, fuerzas místicas y antiguas te convocan. Tu destino es enfrentarte al Mago Oscuro y recuperar los cristales elementales. Cada carta es un hechizo, y cada jugada, parte de tu leyenda.</p>
-        <button onclick="startGame()">Comenzar Duelo</button>
+        <h2>📜 La Profecía de Elementia 📜</h2>
+        <div class="instrucciones">
+            <p>¡Bienvenido, Archimago! Para recuperar los cristales elementales:</p>
+            <ol>
+                <li>🔮 Usa 3 cartas del mismo elemento para activar su cristal</li>
+                <li>💎 Cada cristal activado te da poderes especiales</li>
+                <li>⚡ Los cristales activos debilitan al Mago Oscuro</li>
+                <li>🔥 Combina elementos para crear poderosos hechizos</li>
+            </ol>
+            <p>¡El primer jugador en quedarse sin cartas o recuperar 4 cristales gana!</p>
+        </div>
+        <button onclick="startGame()">Aceptar el Destino</button>
     </div>
 
     <div id="game-board" style="display: none;">
         <div id="board-top">
             <div id="deck">
-                <h3>Mazo</h3>
-                <div class="card wild">+4<br><small>Salvaje</small></div>
+                <h3>📖 Grimorio</h3>
+                <div class="card wild">+4<br><small>Caos</small></div>
             </div>
             <div id="discard">
-                <h3>Descartes</h3>
+                <h3>🌀 Vortex Mágico</h3>
                 <div class="card" id="current-card">Vacío</div>
             </div>
             <div id="bot-hand">
-                <h3>Mago Rival</h3>
-                <p id="bot-count">7 cartas</p>
+                <h3>👤 Mago Oscuro</h3>
+                <p id="bot-count">7 hechizos</p>
             </div>
         </div>
         
         <div id="player-hand">
-            <h3>Tu Mano</h3>
+            <h3>✨ Tus Hechizos</h3>
         </div>
         
-        <button id="pass-turn" onclick="passTurn()">Pasar Turno</button>
+        <button id="pass-turn" onclick="passTurn()">⏳ Invocar Plegaria Ancestral</button>
     </div>
 
     <script>
@@ -181,14 +221,34 @@
         let botHand = [];
         let currentCard = null;
         let currentTurn = 'player';
+        let cristalesActivados = new Set();
+        let cristalProgreso = { fuego: 0, naturaleza: 0, agua: 0, rayo: 0 };
 
         const elementos = {
             fuego: 'Fuego',
             naturaleza: 'Naturaleza',
             agua: 'Agua',
             rayo: 'Rayo',
-            wild: 'Salvaje'
+            wild: 'Caos'
         };
+
+        function actualizarCristales(elemento) {
+            if (elemento in cristalProgreso) {
+                cristalProgreso[elemento]++;
+                if (cristalProgreso[elemento] >= 3) {
+                    cristalesActivados.add(elemento);
+                    document.getElementById(`cristal-${elemento}`).classList.add('activo');
+                    cristalProgreso[elemento] = 0;
+                    mostrarHechizo(`¡CRISTAL ${elemento.toUpperCase()} ACTIVADO!`, '#FFD700');
+                    aplicarBeneficios(elemento);
+                }
+            }
+        }
+
+        function aplicarBeneficios(elemento) {
+            // Implementar beneficios según elemento
+            console.log(`Beneficio activado para ${elemento}`);
+        }
 
         function createDeck() {
             const colors = ['fuego', 'naturaleza', 'agua', 'rayo'];
@@ -224,7 +284,7 @@
 
         function renderHands() {
             const playerHandDiv = document.getElementById('player-hand');
-            playerHandDiv.innerHTML = '<h3>Tu Mano</h3>';
+            playerHandDiv.innerHTML = '<h3>✨ Tus Hechizos</h3>';
             
             playerHand.forEach((card, index) => {
                 const cardElement = document.createElement('div');
@@ -241,100 +301,49 @@
             }
         }
 
-        function isValidPlay(card) {
-            if(!currentCard) return true;
-            return card.color === currentCard.color ||
-                   card.value === currentCard.value ||
-                   card.color === 'wild';
-        }
-
         function processSpecialCard(card, playedBy) {
-            if(card.value === 'reverse') {
-                currentTurn = playedBy;
-            } else if(card.value === 'skip') {
-                currentTurn = playedBy;
-            } else if(card.value === '+2') {
-                const target = playedBy === 'player' ? botHand : playerHand;
-                for(let i = 0; i < 2; i++) {
-                    if(deck.length > 0) target.push(deck.shift());
-                }
-                currentTurn = playedBy;
-            } else if(card.value === '+4') {
-                const newColor = playedBy === 'player' 
-                    ? prompt("Elige color (fuego, naturaleza, agua, rayo):")
-                    : ['fuego', 'naturaleza', 'agua', 'rayo'][Math.floor(Math.random()*4)];
-                card.color = newColor;
-                const target = playedBy === 'player' ? botHand : playerHand;
-                for(let i = 0; i < 4; i++) {
-                    if(deck.length > 0) target.push(deck.shift());
-                }
-                currentTurn = playedBy;
-            } else if(card.value === 'cambiar') {
-                const newColor = playedBy === 'player' 
-                    ? prompt("Elige color (fuego, naturaleza, agua, rayo):")
-                    : ['fuego', 'naturaleza', 'agua', 'rayo'][Math.floor(Math.random()*4)];
-                card.color = newColor;
-                currentTurn = playedBy;
+            const colores = ['fuego', 'naturaleza', 'agua', 'rayo'];
+            switch(card.value) {
+                case 'reverse':
+                    currentTurn = playedBy;
+                    break;
+                case 'skip':
+                    currentTurn = playedBy;
+                    break;
+                case '+2':
+                    const target = playedBy === 'player' ? botHand : playerHand;
+                    for(let i = 0; i < 2; i++) deck.length > 0 && target.push(deck.shift());
+                    currentTurn = playedBy;
+                    break;
+                case '+4':
+                    const newColor = playedBy === 'player' 
+                        ? prompt("Elige elemento:").toLowerCase()
+                        : colores[Math.floor(Math.random()*4)];
+                    card.color = newColor;
+                    const target2 = playedBy === 'player' ? botHand : playerHand;
+                    for(let i = 0; i < 4; i++) deck.length > 0 && target2.push(deck.shift());
+                    currentTurn = playedBy;
+                    actualizarCristales(newColor);
+                    break;
+                case 'cambiar':
+                    const newColor2 = playedBy === 'player' 
+                        ? prompt("Invoca elemento:").toLowerCase()
+                        : colores[Math.floor(Math.random()*4)];
+                    card.color = newColor2;
+                    currentTurn = playedBy;
+                    actualizarCristales(newColor2);
+                    break;
             }
-        }
-
-        function showTurnNotification() {
-            const notification = document.createElement('div');
-            notification.style = `
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0,0,0,0.8);
-                color: gold;
-                padding: 15px 30px;
-                border-radius: 10px;
-                border: 2px solid gold;
-                font-size: 1.2em;
-                animation: fadeInOut 2s;
-                z-index: 999;
-            `;
-            
-            notification.textContent = currentTurn === 'player' 
-                ? '¡Es tu turno!' 
-                : 'Turno del Mago Oscuro...';
-            
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 2000);
-        }
-
-        function checkWinCondition() {
-            if(playerHand.length === 0) {
-                showVictoryMessage('¡Felicidades, has ganado!');
-                return true;
-            }
-            if(botHand.length === 0) {
-                showVictoryMessage('¡El Mago Oscuro ha ganado!');
-                return true;
-            }
-            return false;
-        }
-
-        function showVictoryMessage(message) {
-            const victoryModal = document.createElement('div');
-            victoryModal.className = 'victory-modal';
-            victoryModal.innerHTML = `
-                <h2>${message}</h2>
-                <button onclick="location.reload()" 
-                        style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
-                    Jugar de nuevo
-                </button>
-            `;
-            document.body.appendChild(victoryModal);
         }
 
         function playCard(index) {
             if(currentTurn !== 'player') return;
             
             const card = playerHand[index];
-            if(!isValidPlay(card)) return alert('Movimiento no válido!');
+            if(!isValidPlay(card)) return alert('¡Hechizo incompatible!');
             
             currentCard = playerHand.splice(index, 1)[0];
+            actualizarCristales(currentCard.color);
             
             if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)) {
                 processSpecialCard(currentCard, 'player');
@@ -344,9 +353,7 @@
             
             renderHands();
             updateCounts();
-            
             if(checkWinCondition()) return;
-            
             if(currentTurn === 'bot') setTimeout(botPlay, 1000);
         }
 
@@ -361,6 +368,7 @@
             
             if(playable !== -1) {
                 currentCard = botHand.splice(playable, 1)[0];
+                actualizarCristales(currentCard.color);
                 
                 if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)) {
                     processSpecialCard(currentCard, 'bot');
@@ -368,25 +376,38 @@
                     currentTurn = 'player';
                 }
             } else {
-                if(deck.length > 0) {
-                    botHand.push(deck.shift());
-                }
+                if(deck.length > 0) botHand.push(deck.shift());
                 currentTurn = 'player';
             }
             
             renderHands();
             updateCounts();
-            
             if(checkWinCondition()) return;
-            
-            if(currentTurn === 'bot') {
-                setTimeout(botPlay, 1000);
+            if(currentTurn === 'bot') setTimeout(botPlay, 1000);
+        }
+
+        function checkWinCondition() {
+            if(playerHand.length === 0 || botHand.length === 0 || cristalesActivados.size === 4) {
+                showVictoryMessage();
+                return true;
             }
+            return false;
+        }
+
+        function showVictoryMessage() {
+            const victory = playerHand.length === 0 || cristalesActivados.size === 4;
+            const victoryModal = document.createElement('div');
+            victoryModal.className = 'victory-modal';
+            victoryModal.innerHTML = `
+                <h2>${victory ? '¡HAS RESTAURADO EL EQUILIBRIO!' : '¡LA OSCURIDAD PREVALECE!'}</h2>
+                <p>Cristales recuperados: ${cristalesActivados.size}/4</p>
+                <button onclick="location.reload()">NUEVO CICLO</button>
+            `;
+            document.body.appendChild(victoryModal);
         }
 
         function updateCounts() {
-            document.getElementById('bot-count').textContent = `${botHand.length} cartas`;
-            showTurnNotification();
+            document.getElementById('bot-count').textContent = `${botHand.length} hechizos`;
         }
 
         function startGame() {
@@ -394,13 +415,16 @@
             document.getElementById('game-board').style.display = 'block';
             
             deck = [];
+            cristalesActivados.clear();
+            cristalProgreso = { fuego: 0, naturaleza: 0, agua: 0, rayo: 0 };
+            document.querySelectorAll('.cristal').forEach(c => c.classList.remove('activo'));
+            
             createDeck();
             shuffleDeck();
             dealCards();
             
-            do {
-                currentCard = deck.shift();
-            } while(currentCard.color === 'wild');
+            do currentCard = deck.shift();
+            while(currentCard.color === 'wild');
             
             renderHands();
             updateCounts();
@@ -408,12 +432,26 @@
 
         function passTurn() {
             if(currentTurn !== 'player') return;
-            if(deck.length > 0) {
-                playerHand.push(deck.shift());
-            }
+            if(deck.length > 0) playerHand.push(deck.shift());
             currentTurn = 'bot';
             renderHands();
             setTimeout(botPlay, 1000);
+        }
+
+        function mostrarHechizo(texto, color) {
+            const efecto = document.createElement('div');
+            efecto.className = 'hechizo-efecto';
+            efecto.textContent = texto;
+            efecto.style.color = color;
+            document.body.appendChild(efecto);
+            setTimeout(() => efecto.remove(), 1000);
+        }
+
+        function isValidPlay(card) {
+            if(!currentCard) return true;
+            return card.color === currentCard.color ||
+                   card.value === currentCard.value ||
+                   card.color === 'wild';
         }
     </script>
 </body>
