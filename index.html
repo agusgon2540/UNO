@@ -1,163 +1,140 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>UNO Elemental - Guerra de Magos</title>
-  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
-  <style>
-    /* Fondo y estética fantasiosa */
-    body {
-      margin: 0;
-      padding: 20px;
-      background: linear-gradient(135deg, #2d2d2d, #4a2c2c), url('https://www.publicdomainpictures.net/pictures/270000/velka/old-paper-texture-background-1568762482cdd.jpg');
-      background-blend-mode: multiply;
-      font-family: 'MedievalSharp', cursive;
-      color: #fefefe;
-      text-align: center;
-    }
-    
-    /* Tablero principal */
-    #game-board {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.8);
-      border: 4px solid #c0a050;
-      border-radius: 10px;
-      box-shadow: 0 0 15px #000;
-    }
-    
-    /* Contenedores de áreas */
-    #board-top {
-      display: flex;
-      justify-content: space-around;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-    
-    #deck, #discard, #bot-hand {
-      background: rgba(0, 0, 0, 0.5);
-      padding: 10px;
-      border: 2px solid #c0a050;
-      border-radius: 8px;
-      width: 28%;
-    }
-    
-    #deck h3, #discard h3, #bot-hand h3 {
-      margin: 0 0 10px;
-    }
-    
-    /* Muestra el mazo con la parte trasera de la carta */
-    #deck .card {
-      background: url('https://i.imgur.com/Wx0Kc1F.png') center/cover no-repeat;
-      border: none;
-      cursor: default;
-    }
-    
-    /* Área de descartes visible */
-    #discard .card {
-      margin: 0 auto;
-    }
-    
-    /* Área de mano del jugador */
-    #player-hand {
-      background: rgba(0, 0, 0, 0.5);
-      padding: 15px;
-      border: 2px solid #c0a050;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    
-    /* Área narrativa */
-    #narrative {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 2px solid #c0a050;
-      border-radius: 5px;
-      font-size: 1.1em;
-      min-height: 30px;
-    }
-    
-    /* Botón de pasar turno */
-    button {
-      background: #4a3520;
-      border: 2px solid #c0a050;
-      color: #fff;
-      padding: 10px 20px;
-      font-size: 1.1em;
-      cursor: pointer;
-      margin: 10px;
-      border-radius: 5px;
-    }
-    
-    /* Modal de historia */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      padding: 20px;
-      border: 3px solid gold;
-      border-radius: 10px;
-      color: white;
-      z-index: 1000;
-      max-width: 80%;
-    }
-    
-    /* Estilos de cartas: se muestran valor y elemento */
-    .card {
-      width: 80px;
-      height: 120px;
-      margin: 5px;
-      border-radius: 8px;
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      cursor: pointer;
-      background-size: cover;
-      position: relative;
-      overflow: hidden;
-      padding: 5px;
-    }
-    
-    /* Estilo según elemento */
-    .fuego { background-color: #e25822; border: 2px solid #ff4500; }
-    .naturaleza { background-color: #228B22; border: 2px solid #32CD32; }
-    .agua { background-color: #1E90FF; border: 2px solid #00BFFF; }
-    .rayo { background-color: #ffd700; border: 2px solid #FFA500; }
-    .wild { background-color: #8e44ad; border: 2px solid #DA70D6; }
-    
-    /* Texto en cada carta para mostrar el nombre del elemento */
-    .card small {
-      font-size: 0.7em;
-      margin-top: 5px;
-      display: block;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>UNO Elemental - Guerra de Magos</title>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+    <style>
+        /* Fondo y estética general */
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2d2d2d, #4a2c2c);
+            font-family: 'MedievalSharp', cursive;
+            color: #fefefe;
+            text-align: center;
+        }
+        
+        /* Tablero principal con efecto de pergamino */
+        #game-board {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8) url('https://www.publicdomainpictures.net/pictures/270000/velka/old-paper-texture-background-1568762482cdd.jpg') center/cover no-repeat;
+            border: 4px solid #c0a050;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #000;
+        }
+        
+        /* Contenedores de áreas (mazo, descartes, mano rival) */
+        #board-top {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        #deck, #discard, #bot-hand {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border: 2px solid #c0a050;
+            border-radius: 8px;
+            width: 28%;
+        }
+        
+        #deck h3, #discard h3, #bot-hand h3 {
+            margin: 0 0 10px;
+        }
+        
+        /* Área de descartes visible */
+        #discard .card {
+            margin: 0 auto;
+        }
+        
+        /* Área de mano del jugador */
+        #player-hand {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border: 2px solid #c0a050;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        /* Botón de pasar turno */
+        button {
+            background: #4a3520;
+            border: 2px solid #c0a050;
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            border-radius: 5px;
+        }
+        
+        /* Modal de historia */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border: 3px solid gold;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+            max-width: 80%;
+        }
+        
+        /* Estilos de cartas: se muestran valor y elemento */
+        .card {
+            width: 80px;
+            height: 120px;
+            margin: 5px;
+            border-radius: 8px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            background-size: cover;
+            position: relative;
+            overflow: hidden;
+            padding: 5px;
+        }
+        
+        /* Estilo según elemento */
+        .fuego { background-color: #e25822; border: 2px solid #ff4500; }
+        .naturaleza { background-color: #228B22; border: 2px solid #32CD32; }
+        .agua { background-color: #1E90FF; border: 2px solid #00BFFF; }
+        .rayo { background-color: #d3b628; border: 2px solid #FFA500; }
+        .wild { background-color: #8e44ad; border: 2px solid #DA70D6; }
+        
+        /* Texto en cada carta para mostrar el nombre del elemento */
+        .card small {
+            font-size: 0.7em;
+            margin-top: 5px;
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <!-- Modal de Historia -->
     <div id="story-modal" class="modal" style="display: block;">
         <h2>¡Bienvenido, Archimago!</h2>
-        <p>En el reino de Elementia, fuerzas místicas y antiguas te convocan. Tu destino es enfrentarte al Mago Oscuro y recuperar los cristales elementales. Cada carta es un hechizo, y cada jugada, parte de tu leyenda.</p>
+        <p>En el reino de Elementia, tu destino está en juego. Usa los elementos para derrotar al mago rival.</p>
         <button onclick="startGame()">Comenzar Duelo</button>
     </div>
 
     <!-- Tablero de Juego -->
     <div id="game-board" style="display: none;">
-        <!-- Área narrativa -->
-        <div id="narrative"></div>
-        
         <div id="board-top">
             <div id="deck">
                 <h3>Mazo</h3>
-                <!-- Mazo mostrado con la parte de atrás -->
-                <div class="card wild"></div>
+                <div class="card wild">+4<br><small>Salvaje</small></div>
             </div>
             <div id="discard">
                 <h3>Descartes</h3>
@@ -192,19 +169,11 @@
             wild: 'Salvaje'
         };
 
-        // Función para actualizar el área narrativa
-        function updateNarrative(message) {
-            const narrDiv = document.getElementById('narrative');
-            narrDiv.textContent = message;
-            // Se oculta el mensaje después de 3 segundos
-            setTimeout(() => narrDiv.textContent = '', 3000);
-        }
-
         function createDeck() {
             const colors = ['fuego', 'naturaleza', 'agua', 'rayo'];
             const values = ['0','1','2','3','4','5','6','7','8','9','reverse','skip','+2'];
             
-            // Cartas normales: una carta "0" y duplicados para el resto
+            // Cartas normales: se agrega una sola carta "0" y se duplican las demás
             colors.forEach(color => {
                 deck.push({ color, value: '0' });
                 values.slice(1).forEach(value => {
@@ -234,7 +203,7 @@
             updateCounts();
         }
 
-        // Renderiza la mano del jugador mostrando valor y elemento
+        // Renderiza la mano del jugador mostrando valor y el nombre del elemento
         function renderHands() {
             const playerHandDiv = document.getElementById('player-hand');
             playerHandDiv.innerHTML = '<h3>Tu Mano</h3>';
@@ -247,7 +216,7 @@
                 playerHandDiv.appendChild(cardElement);
             });
             
-            // Actualiza la carta en descartes
+            // Actualiza la carta en el área de descartes
             if(currentCard) {
                 const currentCardDiv = document.getElementById('current-card');
                 currentCardDiv.className = `card ${currentCard.color}`;
@@ -257,25 +226,22 @@
 
         function isValidPlay(card) {
             if(!currentCard) return true;
-            // Se permite jugar si coincide el color, el valor o si es wild
+            // Permite jugar si el color, valor coinciden o si es wild
             return card.color === currentCard.color ||
                    card.value === currentCard.value ||
                    card.color === 'wild';
         }
 
-        // Procesa cartas especiales y ajusta el turno y narrativa
+        // Procesa las cartas especiales y ajusta el turno
         function processSpecialCard(card, playedBy) {
             if(card.value === 'reverse'){
-                // Reverse: en 2 jugadores se comporta como skip (mantiene turno del que jugó)
-                updateNarrative("¡Hechizo de Reversa! Tu hechizo invierte el flujo, mantienes el turno.");
-                currentTurn = playedBy;
+                // Reverse: en 2 jugadores, se pasa el turno al oponente
+                currentTurn = (playedBy === 'player') ? 'bot' : 'player';
             } else if(card.value === 'skip'){
-                // Skip: se salta el turno del oponente, manteniendo turno del que jugó
-                updateNarrative("¡Hechizo de Salto! El rival pierde su turno.");
+                // Skip: salta el turno del oponente; se asigna turno al que jugó la carta
                 currentTurn = playedBy;
             } else if(card.value === '+2'){
                 // +2: el oponente roba 2 cartas
-                updateNarrative("¡Hechizo +2! El rival debe robar dos cartas.");
                 if(playedBy === 'player'){
                     for(let i = 0; i < 2; i++) {
                         botHand.push(deck.shift());
@@ -287,8 +253,7 @@
                 }
                 currentTurn = (playedBy === 'player') ? 'bot' : 'player';
             } else if(card.value === '+4'){
-                // +4: cambia color y el oponente roba 4 cartas
-                updateNarrative("¡Hechizo +4! Invocas un cambio y el rival sufre.");
+                // +4: solicita cambio de color y el oponente roba 4 cartas
                 let newColor = '';
                 if(playedBy === 'player'){
                     newColor = prompt("Elige nuevo color (fuego, naturaleza, agua, rayo):");
@@ -309,7 +274,6 @@
                 currentTurn = (playedBy === 'player') ? 'bot' : 'player';
             } else if(card.value === 'cambiar'){
                 // "Cambiar": permite elegir un nuevo color sin penalización
-                updateNarrative("¡Hechizo de Cambio! Modificas el destino del duelo.");
                 let newColor = '';
                 if(playedBy === 'player'){
                     newColor = prompt("Elige nuevo color (fuego, naturaleza, agua, rayo):");
@@ -328,7 +292,7 @@
             const card = playerHand[index];
             if(!isValidPlay(card)) return alert('Movimiento no válido!');
             
-            // Juega la carta y retírala de la mano
+            // Juega la carta y quítala de la mano
             currentCard = playerHand.splice(index, 1)[0];
             
             if(['reverse','skip','+2','+4','cambiar'].includes(currentCard.value)){
@@ -379,14 +343,13 @@
             shuffleDeck();
             dealCards();
             
-            // Selecciona la primera carta válida (no wild)
+            // Selecciona la primera carta válida (que no sea wild)
             do {
                 currentCard = deck.shift();
             } while(currentCard.color === 'wild');
             
             renderHands();
             updateCounts();
-            updateNarrative("¡Que comience el duelo!");
         }
 
         function passTurn() {
