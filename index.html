@@ -122,12 +122,33 @@
             display: block;
             color: rgba(255,255,255,0.9);
         }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; top: 0; }
+            20% { opacity: 1; top: 20px; }
+            80% { opacity: 1; top: 20px; }
+            100% { opacity: 0; top: 40px; }
+        }
+
+        .victory-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border: 3px solid gold;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
     <div id="story-modal" class="modal" style="display: block;">
         <h2>¡Bienvenido, Archimago!</h2>
-        <p>En el reino de Elementia, fuerzas místicas te convocan. Enfrenta al Mago Oscuro y recupera los cristales elementales usando tus hechizos.</p>
+        <p>En el reino de Elementia, fuerzas místicas y antiguas te convocan. Tu destino es enfrentarte al Mago Oscuro y recuperar los cristales elementales. Cada carta es un hechizo, y cada jugada, parte de tu leyenda.</p>
         <button onclick="startGame()">Comenzar Duelo</button>
     </div>
 
@@ -229,7 +250,7 @@
 
         function processSpecialCard(card, playedBy) {
             if(card.value === 'reverse') {
-                currentTurn = playedBy; // En 2 jugadores actúa como skip
+                currentTurn = playedBy;
             } else if(card.value === 'skip') {
                 currentTurn = playedBy;
             } else if(card.value === '+2') {
@@ -257,6 +278,56 @@
             }
         }
 
+        function showTurnNotification() {
+            const notification = document.createElement('div');
+            notification.style = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.8);
+                color: gold;
+                padding: 15px 30px;
+                border-radius: 10px;
+                border: 2px solid gold;
+                font-size: 1.2em;
+                animation: fadeInOut 2s;
+                z-index: 999;
+            `;
+            
+            notification.textContent = currentTurn === 'player' 
+                ? '¡Es tu turno!' 
+                : 'Turno del Mago Oscuro...';
+            
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2000);
+        }
+
+        function checkWinCondition() {
+            if(playerHand.length === 0) {
+                showVictoryMessage('¡Felicidades, has ganado!');
+                return true;
+            }
+            if(botHand.length === 0) {
+                showVictoryMessage('¡El Mago Oscuro ha ganado!');
+                return true;
+            }
+            return false;
+        }
+
+        function showVictoryMessage(message) {
+            const victoryModal = document.createElement('div');
+            victoryModal.className = 'victory-modal';
+            victoryModal.innerHTML = `
+                <h2>${message}</h2>
+                <button onclick="location.reload()" 
+                        style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
+                    Jugar de nuevo
+                </button>
+            `;
+            document.body.appendChild(victoryModal);
+        }
+
         function playCard(index) {
             if(currentTurn !== 'player') return;
             
@@ -274,10 +345,14 @@
             renderHands();
             updateCounts();
             
+            if(checkWinCondition()) return;
+            
             if(currentTurn === 'bot') setTimeout(botPlay, 1000);
         }
 
         function botPlay() {
+            if(checkWinCondition()) return;
+            
             const playable = botHand.findIndex(c =>
                 c.color === currentCard.color ||
                 c.value === currentCard.value ||
@@ -302,7 +377,8 @@
             renderHands();
             updateCounts();
             
-            // Verificar si el bot debe seguir jugando
+            if(checkWinCondition()) return;
+            
             if(currentTurn === 'bot') {
                 setTimeout(botPlay, 1000);
             }
@@ -310,6 +386,7 @@
 
         function updateCounts() {
             document.getElementById('bot-count').textContent = `${botHand.length} cartas`;
+            showTurnNotification();
         }
 
         function startGame() {
