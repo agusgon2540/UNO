@@ -167,6 +167,42 @@
             text-align: left;
             margin: 20px 0;
         }
+
+        #turn-notification {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border: 2px solid gold;
+            border-radius: 15px;
+            font-size: 1.2em;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        #help-button {
+            position: fixed;
+            top: 25px;
+            left: 180px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #c0a050;
+            border: 2px solid white;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -176,6 +212,9 @@
         <div class="cristal" id="cristal-agua"></div>
         <div class="cristal" id="cristal-rayo"></div>
     </div>
+
+    <div id="help-button" onclick="showHelpModal()">?</div>
+    <div id="turn-notification">¡Tu turno!</div>
 
     <div id="story-modal" class="modal" style="display: block;">
         <h2>📜 La Profecía de Elementia 📜</h2>
@@ -190,6 +229,21 @@
             <p>¡El primer jugador en quedarse sin cartas o recuperar 4 cristales gana!</p>
         </div>
         <button onclick="startGame()">Aceptar el Destino</button>
+    </div>
+
+    <div id="help-modal" class="modal">
+        <h2>📚 Sabiduría Arcana 📚</h2>
+        <div class="instrucciones">
+            <p>Efectos de los Cristales Elementales:</p>
+            <ul>
+                <li><strong>🔥 Fuego:</strong> 3 cartas rojas - Quema 1 carta del enemigo</li>
+                <li><strong>🌿 Naturaleza:</strong> 3 cartas verdes - Roba 2 cartas extra</li>
+                <li><strong>💧 Agua:</strong> 3 cartas azules - Congela el próximo turno enemigo</li>
+                <li><strong>⚡ Rayo:</strong> 3 cartas amarillas - Destruye 2 cartas aleatorias del enemigo</li>
+            </ul>
+            <p>Los cristales Wild pueden sustituir cualquier elemento!</p>
+        </div>
+        <button onclick="closeHelpModal()">Cerrar</button>
     </div>
 
     <div id="game-board" style="display: none;">
@@ -216,40 +270,61 @@
     </div>
 
     <script>
-        let deck = [];
-        let playerHand = [];
-        let botHand = [];
-        let currentCard = null;
-        let currentTurn = 'player';
-        let cristalesActivados = new Set();
-        let cristalProgreso = { fuego: 0, naturaleza: 0, agua: 0, rayo: 0 };
-
-        const elementos = {
-            fuego: 'Fuego',
-            naturaleza: 'Naturaleza',
-            agua: 'Agua',
-            rayo: 'Rayo',
-            wild: 'Caos'
-        };
-
-        function actualizarCristales(elemento) {
-            if (elemento in cristalProgreso) {
-                cristalProgreso[elemento]++;
-                if (cristalProgreso[elemento] >= 3) {
-                    cristalesActivados.add(elemento);
-                    document.getElementById(`cristal-${elemento}`).classList.add('activo');
-                    cristalProgreso[elemento] = 0;
-                    mostrarHechizo(`¡CRISTAL ${elemento.toUpperCase()} ACTIVADO!`, '#FFD700');
-                    aplicarBeneficios(elemento);
+            // Variables del juego
+            let deck = [];
+            let playerHand = [];
+            let botHand = [];
+            let currentCard = null;
+            let currentTurn = 'player';
+            let cristalesActivados = new Set();
+            let cristalProgreso = { fuego: 0, naturaleza: 0, agua: 0, rayo: 0 };
+    
+            const elementos = {
+                fuego: 'Fuego',
+                naturaleza: 'Naturaleza',
+                agua: 'Agua',
+                rayo: 'Rayo',
+                wild: 'Caos'
+            };
+    
+            function actualizarCristales(elemento) {
+                if (elemento in cristalProgreso) {
+                    cristalProgreso[elemento]++;
+                    if (cristalProgreso[elemento] >= 3) {
+                        cristalesActivados.add(elemento);
+                        document.getElementById(`cristal-${elemento}`).classList.add('activo');
+                        cristalProgreso[elemento] = 0;
+                        mostrarHechizo(`¡CRISTAL ${elemento.toUpperCase()} ACTIVADO!`, '#FFD700');
+                        aplicarBeneficios(elemento);
+                    }
                 }
             }
-        }
-
-        function aplicarBeneficios(elemento) {
-            // Implementar beneficios según elemento
-            console.log(`Beneficio activado para ${elemento}`);
-        }
-
+    
+            function aplicarBeneficios(elemento) {
+                let mensaje = '';
+                switch(elemento) {
+                    case 'fuego':
+                        mensaje = '¡LLAMAS DEVORADORAS! El enemigo roba 1 carta';
+                        botHand.push(deck.shift()); // El enemigo roba una carta
+                        break;
+                    case 'naturaleza':
+                        mensaje = '¡FLORECER! Robas 2 cartas adicionales';
+                        playerHand.push(...deck.splice(0, 2)); // Robas 2 cartas
+                        break;
+                    case 'agua':
+                        mensaje = '¡GLACIAR! Congelando próximo turno enemigo';
+                        currentTurn = 'player'; // Te da otro turno
+                        break;
+                    case 'rayo':
+                        mensaje = '¡TORMENTA ELECTRICA! Destruyendo 2 cartas enemigas';
+                        botHand.splice(-2, 2); // Elimina 2 cartas del enemigo
+                        break;
+                }
+                mostrarHechizo(mensaje, '#FFFFFF');
+                renderHands();
+                updateCounts();
+                updateTurnNotification();
+            }
         function createDeck() {
             const colors = ['fuego', 'naturaleza', 'agua', 'rayo'];
             const values = ['0','1','2','3','4','5','6','7','8','9','reverse','skip','+2'];
@@ -353,6 +428,7 @@
             
             renderHands();
             updateCounts();
+            updateTurnNotification();
             if(checkWinCondition()) return;
             if(currentTurn === 'bot') setTimeout(botPlay, 1000);
         }
@@ -382,6 +458,7 @@
             
             renderHands();
             updateCounts();
+            updateTurnNotification();
             if(checkWinCondition()) return;
             if(currentTurn === 'bot') setTimeout(botPlay, 1000);
         }
@@ -428,6 +505,7 @@
             
             renderHands();
             updateCounts();
+            updateTurnNotification();
         }
 
         function passTurn() {
@@ -435,6 +513,7 @@
             if(deck.length > 0) playerHand.push(deck.shift());
             currentTurn = 'bot';
             renderHands();
+            updateTurnNotification();
             setTimeout(botPlay, 1000);
         }
 
@@ -452,6 +531,19 @@
             return card.color === currentCard.color ||
                    card.value === currentCard.value ||
                    card.color === 'wild';
+        }
+
+        function updateTurnNotification() {
+            const notification = document.getElementById('turn-notification');
+            notification.style.display = currentTurn === 'player' ? 'block' : 'none';
+        }
+
+        function showHelpModal() {
+            document.getElementById('help-modal').style.display = 'block';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('help-modal').style.display = 'none';
         }
     </script>
 </body>
